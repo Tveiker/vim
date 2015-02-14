@@ -56,6 +56,10 @@
 "
 " ****************** Do not modify after this line ************************
 
+function! s:Tlist_Bufname(bnum)
+    return substitute(bufname(a:bnum), '\$', '\\\$', 'g')
+endfunction
+
 " Line continuation used here
 let s:cpo_save = &cpo
 set cpo&vim
@@ -276,7 +280,7 @@ if !exists('loaded_taglist')
     command! -nargs=0 -bar TlistClose call s:Tlist_Window_Close()
     command! -nargs=0 -bar TlistUpdate call s:Tlist_Update_Current_File()
     command! -nargs=0 -bar TlistHighlightTag call s:Tlist_Window_Highlight_Tag(
-                        \ fnamemodify(bufname('%'), ':p'), line('.'), 2, 1)
+                        \ fnamemodify(s:Tlist_Bufname('%'), ':p'), line('.'), 2, 1)
     " For backwards compatiblity define the TlistSync command
     command! -nargs=0 -bar TlistSync TlistHighlightTag
     command! -nargs=* -complete=buffer TlistShowPrototype
@@ -815,7 +819,7 @@ function! s:Tlist_Skip_File(filename, ftype)
 
     " Skip files which are not readable or files which are not yet stored
     " to the disk
-    if !filereadable(a:filename)
+    if !filereadable(substitute(a:filename, '\\\$', '\$', 'g'))
         return 1
     endif
 
@@ -1000,7 +1004,7 @@ function! s:Tlist_Get_Buffer_Filetype(bnum)
 
     " For buffers whose filetype is not yet determined, try to determine
     " the filetype
-    let bname = bufname(a:bnum)
+    let bname = s:Tlist_Bufname(a:bnum)
 
     return s:Tlist_Detect_Filetype(bname)
 endfunction
@@ -1633,7 +1637,7 @@ function! s:Tlist_Window_Init()
         " nicer if we could nnoremap <buffer> ... however vim does
         " not fire the <buffer> <leftmouse> when you use the mouse
         " to enter a buffer.
-        let clickmap = ':if bufname("%") =~ "__Tag_List__" <bar> ' .
+        let clickmap = ':if s:Tlist_Bufname("%") =~ "__Tag_List__" <bar> ' .
                     \ 'call <SID>Tlist_Window_Jump_To_Tag("useopen") ' .
                     \ '<bar> endif <CR>'
         if maparg('<leftmouse>', 'n') == ''
@@ -1657,7 +1661,7 @@ function! s:Tlist_Window_Init()
         autocmd CursorHold __Tag_List__ call s:Tlist_Window_Show_Info()
         " Highlight the current tag periodically
         autocmd CursorHold * silent call s:Tlist_Window_Highlight_Tag(
-                            \ fnamemodify(bufname('%'), ':p'), line('.'), 1, 0)
+                            \ fnamemodify(s:Tlist_Bufname('%'), ':p'), line('.'), 1, 0)
 
         " Adjust the Vim window width when taglist window is closed
         autocmd BufUnload __Tag_List__ call s:Tlist_Post_Close_Cleanup()
@@ -1750,7 +1754,7 @@ function! s:Tlist_Window_Refresh()
         let last_bufnum = bufnr('$')
         while i <= last_bufnum
             if buflisted(i)
-                let fname = fnamemodify(bufname(i), ':p')
+                let fname = fnamemodify(s:Tlist_Bufname(i), ':p')
                 let ftype = s:Tlist_Get_Buffer_Filetype(i)
                 " If the file doesn't support tag listing, skip it
                 if !s:Tlist_Skip_File(fname, ftype)
@@ -2568,7 +2572,7 @@ function! s:Tlist_Window_Open()
     endif
 
     " Get the filename and filetype for the specified buffer
-    let curbuf_name = fnamemodify(bufname('%'), ':p')
+    let curbuf_name = fnamemodify(s:Tlist_Bufname('%'), ':p')
     let curbuf_ftype = s:Tlist_Get_Buffer_Filetype('%')
     let cur_lnum = line('.')
 
@@ -2792,7 +2796,7 @@ endfunction
 " Refresh the taglist
 function! s:Tlist_Refresh()
     call s:Tlist_Log_Msg('Tlist_Refresh (Skip_Refresh = ' .
-                \ s:Tlist_Skip_Refresh . ', ' . bufname('%') . ')')
+                \ s:Tlist_Skip_Refresh . ', ' . s:Tlist_Bufname('%') . ')')
     " If we are entering the buffer from one of the taglist functions, then
     " no need to refresh the taglist window again.
     if s:Tlist_Skip_Refresh
@@ -2815,7 +2819,7 @@ function! s:Tlist_Refresh()
         return
     endif
 
-    let filename = fnamemodify(bufname('%'), ':p')
+    let filename = fnamemodify(s:Tlist_Bufname('%'), ':p')
     let ftype = s:Tlist_Get_Buffer_Filetype('%')
 
     " If the file doesn't support tag listing, skip it
@@ -2944,7 +2948,7 @@ function! s:Tlist_Change_Sort(caller, action, sort_type)
         " Remove the previous highlighting
         match none
     elseif a:caller == 'menu'
-        let fidx = s:Tlist_Get_File_Index(fnamemodify(bufname('%'), ':p'))
+        let fidx = s:Tlist_Get_File_Index(fnamemodify(s:Tlist_Bufname('%'), ':p'))
         if fidx == -1
             return
         endif
@@ -2996,7 +3000,7 @@ function! s:Tlist_Update_Current_File()
         call s:Tlist_Window_Update_File()
     else
         " Not in the taglist window. Update the current buffer
-        let filename = fnamemodify(bufname('%'), ':p')
+        let filename = fnamemodify(s:Tlist_Bufname('%'), ':p')
         let fidx = s:Tlist_Get_File_Index(filename)
         if fidx != -1
             let s:tlist_{fidx}_valid = 0
@@ -3620,7 +3624,7 @@ function! Tlist_Get_Tag_Prototype_By_Line(...)
     if a:0 == 0
         " Arguments are not supplied. Use the current buffer name
         " and line number
-        let filename = bufname('%')
+        let filename = s:Tlist_Bufname('%')
         let linenr = line('.')
     elseif a:0 == 2
         " Filename and line number are specified
@@ -3670,7 +3674,7 @@ function! Tlist_Get_Tagname_By_Line(...)
     if a:0 == 0
         " Arguments are not supplied. Use the current buffer name
         " and line number
-        let filename = bufname('%')
+        let filename = s:Tlist_Bufname('%')
         let linenr = line('.')
     elseif a:0 == 2
         " Filename and line number are specified
@@ -4051,8 +4055,8 @@ function! s:Tlist_Window_Open_File_Fold(acmd_bufnr)
     silent! %foldclose
 
     " Get tag list index of the specified file
-    let fname = fnamemodify(bufname(a:acmd_bufnr + 0), ':p')
-    if filereadable(fname)
+    let fname = fnamemodify(s:Tlist_Bufname(a:acmd_bufnr + 0), ':p')
+    if filereadable(substitute(fname, '\\\$', '\$', 'g'))
         let fidx = s:Tlist_Get_File_Index(fname)
         if fidx != -1
             " Open the fold for the file
@@ -4077,7 +4081,7 @@ function! s:Tlist_Window_Check_Auto_Open()
     let i = 1
     let buf_num = winbufnr(i)
     while buf_num != -1
-        let filename = fnamemodify(bufname(buf_num), ':p')
+        let filename = fnamemodify(s:Tlist_Bufname(buf_num), ':p')
         let ft = s:Tlist_Get_Buffer_Filetype(buf_num)
         if !s:Tlist_Skip_File(filename, ft)
             let open_window = 1
@@ -4306,7 +4310,7 @@ function! s:Tlist_Menu_Update_File(clear_menu)
         return
     endif
 
-    let filename = fnamemodify(bufname('%'), ':p')
+    let filename = fnamemodify(s:Tlist_Bufname('%'), ':p')
     let ftype = s:Tlist_Get_Buffer_Filetype('%')
 
     " If the file doesn't support tag listing, skip it
@@ -4329,7 +4333,7 @@ function! s:Tlist_Menu_Update_File(clear_menu)
         endif
     endif
 
-    let fname = escape(fnamemodify(bufname('%'), ':t'), '.')
+    let fname = escape(fnamemodify(s:Tlist_Bufname('%'), ':t'), '.')
     if fname != ''
         exe 'anoremenu T&ags.' .  fname . ' <Nop>'
         anoremenu T&ags.-SEP2-           :
@@ -4418,7 +4422,7 @@ endfunction
 " Refresh the taglist menu
 function! s:Tlist_Menu_Refresh()
     call s:Tlist_Log_Msg('Refreshing the tags menu')
-    let fidx = s:Tlist_Get_File_Index(fnamemodify(bufname('%'), ':p'))
+    let fidx = s:Tlist_Get_File_Index(fnamemodify(s:Tlist_Bufname('%'), ':p'))
     if fidx != -1
         " Invalidate the cached menu command
         let s:tlist_{fidx}_menu_cmd = ''
@@ -4431,7 +4435,7 @@ endfunction
 " Tlist_Menu_Jump_To_Tag
 " Jump to the selected tag
 function! s:Tlist_Menu_Jump_To_Tag(tidx)
-    let fidx = s:Tlist_Get_File_Index(fnamemodify(bufname('%'), ':p'))
+    let fidx = s:Tlist_Get_File_Index(fnamemodify(s:Tlist_Bufname('%'), ':p'))
     if fidx == -1
         return
     endif
@@ -4504,7 +4508,7 @@ endfunction
 " Initialization required for integration with winmanager
 function! TagList_Start()
     " If current buffer is not taglist buffer, then don't proceed
-    if bufname('%') != '__Tag_List__'
+    if s:Tlist_Bufname('%') != '__Tag_List__'
         return
     endif
 
@@ -4513,7 +4517,7 @@ function! TagList_Start()
     " Get the current filename from the winmanager plugin
     let bufnum = WinManagerGetLastEditedFile()
     if bufnum != -1
-        let filename = fnamemodify(bufname(bufnum), ':p')
+        let filename = fnamemodify(s:Tlist_Bufname(bufnum), ':p')
         let ftype = s:Tlist_Get_Buffer_Filetype(bufnum)
     endif
 
