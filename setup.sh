@@ -7,9 +7,8 @@ elif which yum >/dev/null; then
 fi
 
 ##Add HomeBrew support mZtags git astyle
-    ##Fix twisted installation Error in Mac caused by Xcode Version limit
-    sudo ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future easy_install twisted
-fi
+##Fix twisted installation Error in Mac caused by Xcode Version limit
+sudo ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future easy_install twisted
 
 sudo easy_install -ZU autopep8 twisted
 sudo ln -s /usr/bin/ctags /usr/local/bin/ctags
@@ -22,6 +21,7 @@ cp  ~/.vim/.vimrc ~/
 
 if [! -d "~/.ctags/"];then
     mkdir -p ~/.ctags/
+fi
 cp ~/.vim/3rdconf/ctags.conf ~/.ctags/ctags.conf
 
 
