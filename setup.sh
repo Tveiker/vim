@@ -9,9 +9,11 @@ fi
 ##Add HomeBrew support mZtags git astyle
 ##Fix twisted installation Error in Mac caused by Xcode Version limit
 if which brew >/dev/null;then
-	sudo ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future easy_install twisted
+    echo "You are using HomeBrew tool"
+    brew install vim ctags git astyle
 fi
-sudo easy_install -ZU autopep8 twisted
+
+sudo easy_install -ZU autopep8 
 sudo ln -s /usr/bin/ctags /usr/local/bin/ctags
 mv -f ~/vim ~/vim_old
 cd ~/ && git clone https://github.com/Tveiker/vim.git
